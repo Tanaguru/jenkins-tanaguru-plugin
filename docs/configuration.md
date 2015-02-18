@@ -116,4 +116,4 @@ in the configuration of the item (Build section).
 
 ## Next step
 
-proceed to [Usage](usage.md)
+proceed to [Configuration of Item](configuration-of-item.md)

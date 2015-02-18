@@ -4,6 +4,7 @@ pages:
 - ['network-architecture.md', 'Network Architecture']
 - ['install-doc.md', 'Installation']
 - ['configuration.md', 'Configuration']
+- ['configuration-of-item.md', 'Configuration of item']
 - ['usage.md', 'Usage']
 - ['graphs.md', 'Graphs creation and customisation']
 - ['developer-doc.md', 'Developer doc']
