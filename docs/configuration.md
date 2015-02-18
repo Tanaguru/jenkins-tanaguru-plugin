@@ -113,3 +113,7 @@ my-jenkins-user@internal.company.com
 just after the first build. The contract name will be the item name. The contract
 will have the scenario feature activated. The scenario name will be the one given
 in the configuration of the item (Build section).
+
+## Next step
+
+proceed to [Usage](usage.md)
