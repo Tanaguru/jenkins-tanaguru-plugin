@@ -4,8 +4,6 @@ Go to Jenkins > Manage Jenkins > Configure system, go down to the *Tanaguru Runn
 
 ![](Images/screenshot_20150217_TANAGURU_jenkins_configuration.png)
 
-@@@ make another screenshot with mandatory fields
-
 ## Path to the Tanaguru CLI installation (Mandatory)
 
 Path to the local Tanaguru CLI
@@ -25,6 +23,8 @@ Example:
 ```bash
 98
 ```
+
+**Note:** you must not have colon ":" in this value?
 
 ## Path to Firefox binary (Mandatory)
 
