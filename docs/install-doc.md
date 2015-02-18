@@ -118,7 +118,7 @@ Go to Advanced tab and upload the .hpi file
 
 ![](Images/screenshot_20150216_TANAGURU_jenkins_manage_plugins_advanced_tab_highlight.png)
 
-If you ever had played with Tanaguru CLI before, please run:
+If you had ever played with Tanaguru CLI before, please run:
 
 ```bash
 sudo rm -rf  /tmp/org.hibernate.cache.*
