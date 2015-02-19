@@ -1,3 +1,5 @@
+[![Build Status](https://travis-ci.org/Tanaguru/jenkins-tanaguru-plugin.svg?branch=master)](https://travis-ci.org/Tanaguru/jenkins-tanaguru-plugin)
+
 # jenkins-tanaguru-plugin
 
 The plugin allows you to trigger Tanaguru analysis from Jenkins using Build step.
