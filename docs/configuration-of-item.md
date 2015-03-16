@@ -17,7 +17,7 @@
 ## Configure build step
 
 * Name the scenario
-* Copy/paste the scenario you will have create (see [Tanaguru scenario user documentation](@@@ Link to add))
+* Copy/paste the scenario you will have created (see [Tanaguru scenario user documentation](http://tanaguru.readthedocs.org/en/develop/userdoc-scenario-audit/))
 * Choose the Referentiel and Level (if you don't what to choose, elect *Rgaa3: AA*)
 * Save
 
