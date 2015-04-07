@@ -45,19 +45,19 @@ public class ProjectTanaguruAction implements ProminentProjectAction {
         this.project = project;
     }
 
-    @Override
+//    @Override
     public String getIconFileName() {
         PluginWrapper wrapper = Jenkins.getInstance().getPluginManager()
                 .getPlugin(TanaguruPlugin.class);
         return "/plugin/" + wrapper.getShortName() + "/images/Logo-Tanaguru.png";
     }
 
-    @Override
+//    @Override
     public String getDisplayName() {
         return "Tanaguru";
     }
 
-    @Override
+//    @Override
     public String getUrlName() {
         String webappUrl = Jenkins.getInstance().getDescriptorByType(TanaguruRunnerBuilder.DescriptorImpl.class).getInstallation().getWebappUrl();
         if (project.getLastBuild() != null) {

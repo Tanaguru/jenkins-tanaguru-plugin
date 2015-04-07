@@ -109,6 +109,8 @@ public class TanaguruRunner {
         pb.directory(contextDir);
         pb.redirectErrorStream(true);
         Process p = pb.start();
+        
+        
         p.waitFor();
         
         extractDataAndPrintOut(logFile, listener.getLogger());

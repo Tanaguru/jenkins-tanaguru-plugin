@@ -21,8 +21,12 @@
  */
 package jenkins.plugins.tanaguru;
 
+import com.jcraft.jsch.JSch;
+import com.jcraft.jsch.JSchException;
+import com.jcraft.jsch.Session;
 import com.sebuilder.interpreter.IO;
 import com.sebuilder.interpreter.factory.ScriptFactory;
+
 import hudson.Launcher;
 import hudson.Extension;
 import hudson.FilePath;
@@ -36,14 +40,19 @@ import hudson.tasks.Builder;
 import hudson.tasks.BuildStepDescriptor;
 import hudson.util.ListBoxModel;
 import hudson.util.ListBoxModel.Option;
+
 import java.io.File;
+
 import net.sf.json.JSONObject;
+
 import org.kohsuke.stapler.DataBoundConstructor;
 import org.kohsuke.stapler.StaplerRequest;
 import org.kohsuke.stapler.QueryParameter;
 
 import javax.servlet.ServletException;
+
 import java.io.IOException;
+
 import org.apache.commons.io.FileUtils;
 import org.apache.commons.io.IOUtils;
 import org.apache.commons.lang.StringUtils;
@@ -156,6 +165,11 @@ public class TanaguruRunnerBuilder extends Builder {
 
     @Override
     public boolean perform(AbstractBuild build, Launcher launcher, BuildListener listener) throws IOException, InterruptedException {
+    	Boolean dynamic = getDescriptor().getInstallation().isDynamic();
+
+    	if(dynamic){
+    		
+    	}
       
         // This is where you 'build' the project.
         File contextDir = new File(getDescriptor().getTanaguruCliPath());
@@ -170,6 +184,7 @@ public class TanaguruRunnerBuilder extends Builder {
         }
         
         String spaceEscapedScenarioName=scenarioName.replace(' ','_');
+        
         
         TanaguruRunner tanaguruRunner=
                 new TanaguruRunner(
@@ -444,7 +459,7 @@ public class TanaguruRunnerBuilder extends Builder {
          * @throws javax.servlet.ServletException
          * @throws IOException 
          */
-        public FormValidation doCheckXmxValue (@QueryParameter String value)
+        public FormValidation doCheckXmxValue(@QueryParameter String value)
                 throws IOException, ServletException {
             
             if (value.length() == 0) {
@@ -524,8 +539,53 @@ public class TanaguruRunnerBuilder extends Builder {
             }
             return FormValidation.ok();
         }
-
-
+        
+        /**
+         * Test connection to the remote server 
+         * 
+         *
+         * @param value This parameter receives the value that the user has
+         * typed.
+         * @return Indicates the outcome of the validation. This is sent to the
+         * browser.
+         * <p>
+         * Note that returning {@link FormValidation#error(String)} does not
+         * prevent the form from being saved. It just means that a message will
+         * be displayed to the user.
+         * @throws javax.servlet.ServletException
+         * @throws IOException
+         */
+        public FormValidation doCliTestConnection(@QueryParameter Boolean dynamic, @QueryParameter String cliHostName, 
+        		@QueryParameter String cliUserName, 
+        		@QueryParameter String cliPassword)
+                throws IOException, ServletException {
+            
+        	System.out.println("dynamic : " + dynamic);
+        	if(cliHostName.length() == 0 || cliUserName.length() == 0 || cliPassword.length() == 0){
+        		return FormValidation.error("Please check that the fields aren't empty!");
+        	}
+        	
+        	java.util.Properties config = new java.util.Properties();
+            config.put("StrictHostKeyChecking", "no");
+            JSch jsch = new JSch();
+            Session session;
+			try {
+				session = jsch.getSession(cliUserName, cliHostName, 22);
+				session.setPassword(cliPassword);
+				session.setConfig(config);
+				session.connect();
+				if(session.isConnected()){
+					return FormValidation.ok("Success");
+				}
+				session.disconnect();
+			} catch (JSchException e) {
+				e.printStackTrace();
+				return FormValidation.error("Error occured while authenticating to the server!");
+			}
+        	
+			return FormValidation.error("Error occured while authenticating to the server!");
+        }
+        
         /**
          * Fill-in values of the form field 'referential and level'.
          *
@@ -575,7 +635,11 @@ public class TanaguruRunnerBuilder extends Builder {
                         formData.getString("databaseName"),
                         formData.getString("databaseLogin"),
                         formData.getString("databasePassword"),
-                        formData.getString("tanaguruLogin")
+                        formData.getString("tanaguruLogin"),
+                        formData.getBoolean("dynamic"),
+                        formData.getString("cliHostName"),
+                        formData.getString("cliUserName"),
+                        formData.getString("cliPassword")
                     );
             isDebug = formData.getBoolean("isDebug");
 
