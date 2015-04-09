@@ -25,23 +25,13 @@ import hudson.FilePath;
 import hudson.model.BuildListener;
 
 import java.io.File;
-import java.io.FileInputStream;
-import java.io.FileOutputStream;
 import java.io.IOException;
-import java.io.InputStream;
-import java.io.OutputStream;
 import java.io.PrintStream;
 import java.util.Random;
 
 import org.apache.commons.io.FileUtils;
 import org.apache.commons.io.IOUtils;
 import org.apache.commons.lang.StringUtils;
-
-import com.jcraft.jsch.Channel;
-import com.jcraft.jsch.ChannelExec;
-import com.jcraft.jsch.ChannelSftp;
-import com.jcraft.jsch.JSch;
-import com.jcraft.jsch.Session;
 
 /**
  * 
@@ -120,7 +110,7 @@ public class TanaguruRunner {
 				//// COPY SCENARIO IN A FILE ////////
 				/////////////////////////////////////
 				File tempScenario = new File(workspacedir.getAbsolutePath() + "/" + scenarioName + buildNumber);
-				FileUtils.writeStringToFile(tempScenario, stripLeadingAndTrailingQuotes(TanaguruRunnerBuilder.forceVersion1ToScenario(scenario)));
+				FileUtils.writeStringToFile(tempScenario, Utilities.stripLeadingAndTrailingQuotes(TanaguruRunnerBuilder.forceVersion1ToScenario(scenario)));
 
 				/////////////////////////////////////
 				//// EDIT ACT SCRIPT CONTENT ////////
@@ -163,20 +153,20 @@ public class TanaguruRunner {
 				String password = descriptor.getCliPassword();
 				String host = descriptor.getCliHostName();
 
-				uploadFileToSftpServer(user, password, host, context, workspacedir.getAbsolutePath() + "/" + scriptName);
-				uploadFileToSftpServer(user, password, host, context + "/tmp/", workspacedir.getAbsolutePath() + "/" + insertActScript);
-				uploadFileToSftpServer(user, password, host, context + "/tmp/", workspacedir.getAbsolutePath() + "/" + sqlProcedureScript);
-				uploadFileToSftpServer(user, password, host, context + "/tmp/", workspacedir.getAbsolutePath() + "/" + scenarioName + buildNumber);
+				Utilities.uploadFileToSftpServer(user, password, host, context, workspacedir.getAbsolutePath() + "/" + scriptName);
+				Utilities.uploadFileToSftpServer(user, password, host, context + "/tmp/", workspacedir.getAbsolutePath() + "/" + insertActScript);
+				Utilities.uploadFileToSftpServer(user, password, host, context + "/tmp/", workspacedir.getAbsolutePath() + "/" + sqlProcedureScript);
+				Utilities.uploadFileToSftpServer(user, password, host, context + "/tmp/", workspacedir.getAbsolutePath() + "/" + scenarioName + buildNumber);
 
-				execNixComAndGetRez(user, password, host, "chmod -R 775 " + context + "/" + scriptName, listener.getLogger());			
-				execNixComAndGetRez(user, password, host, "chmod -R 775 " + context + "/tmp", listener.getLogger());
+				Utilities.execNixComAndGetRez(user, password, host, "chmod -R 775 " + context + "/" + scriptName, listener.getLogger());			
+				Utilities.execNixComAndGetRez(user, password, host, "chmod -R 775 " + context + "/tmp", listener.getLogger());
 
 				// dos2unix has to be pre installed
-				execNixComAndGetRez(user, password, host, "cd " + context + " && dos2unix " + scriptName, listener.getLogger());
-				execNixComAndGetRez(user, password, host, "cd " + context + " && ./tanaguru_runner.sh", listener.getLogger());
+				Utilities.execNixComAndGetRez(user, password, host, "cd " + context + " && dos2unix " + scriptName, listener.getLogger());
+				Utilities.execNixComAndGetRez(user, password, host, "cd " + context + " && ./tanaguru_runner.sh", listener.getLogger());
 
 				// Extract data and print out
-				String propertiesTanaguru = execNixComAndGetRez(user, password, host, "cd " + context + " && cat tmp/tanaguru.properties", listener.getLogger());
+				String propertiesTanaguru = Utilities.execNixComAndGetRez(user, password, host, "cd " + context + " && cat tmp/tanaguru.properties", listener.getLogger());
 				
 				logFile = new File(workspacedir.getAbsolutePath() + "/" +  propertyFile);
 				FileUtils.writeStringToFile(logFile, propertiesTanaguru);
@@ -184,13 +174,13 @@ public class TanaguruRunner {
 				extractDataAndPrintOut(logFile, listener.getLogger());
 				
 				// Remove files from remote server
-				execNixComAndGetRez(user, password, host, "cd " + context + " && rm -rf " + scriptName + " && rm -rf tmp/" + insertActScript + " tmp/" + sqlProcedureScript + " tmp/" + scenarioName + buildNumber, listener.getLogger());
+				Utilities.execNixComAndGetRez(user, password, host, "cd " + context + " && rm -rf " + scriptName + " && rm -rf tmp/" + insertActScript + " tmp/" + sqlProcedureScript + " tmp/" + scenarioName + buildNumber, listener.getLogger());
 				if (!descriptor.getIsDebug()) {
-					execNixComAndGetRez(user, password, host, "cd " + context + " && rm -rf tmp/*", listener.getLogger());
+					Utilities.execNixComAndGetRez(user, password, host, "cd " + context + " && rm -rf tmp/*", listener.getLogger());
 				}
 				
 				// Remove temp files from workspace
-				FileUtils.deleteQuietly(sqlProcedureFile);
+				FileUtils.deleteQuietly(new File(workspacedir.getAbsolutePath() + "/" + sqlProcedureScript));
 				FileUtils.deleteQuietly(tempScenario);
 				FileUtils.deleteQuietly(tempFileAct);
 				FileUtils.deleteQuietly(tempFileRunner);
@@ -243,7 +233,6 @@ public class TanaguruRunner {
 	 * @throws IOException 
 	 */
 	public void extractDataAndPrintOut(File logFile, PrintStream ps) throws IOException {
-		System.out.println("HERE WE GO LETS EXTRACT THE FILE");
 		ps.println("");
 		boolean isFirstMark = true;
 		boolean isFirstNbPassed = true;
@@ -262,164 +251,51 @@ public class TanaguruRunner {
 				ps.println(line.replace("RawMark", "Mark"));
 				if (isFirstMark) {
 					mark = StringUtils.substring(line, StringUtils.indexOf(line, ":")+1).replaceAll("%", "").trim();
-					System.out.println("MARK : " + mark);
 					isFirstMark = false;
 				}
 			} else if (StringUtils.startsWith(line, "Nb Passed")) {
 				ps.println(line); 
 				if (isFirstNbPassed) {
 					nbPassed = StringUtils.substring(line, StringUtils.indexOf(line, ":")+1).trim();
-					System.out.println("nbPassed " + nbPassed);
 					isFirstNbPassed = false;
 				}
 			} else if (StringUtils.startsWith(line, "Nb Failed test")) {
 				ps.println(line);
 				if (isFirstNbFailed) {
 					nbFailed = StringUtils.substring(line, StringUtils.indexOf(line, ":")+1).trim();
-					System.out.println("nbFailed " + nbFailed);
 					isFirstNbFailed = false;
 				}
 			} else if (StringUtils.startsWith(line, "Nb Failed occurences")) {
 				ps.println(line);
 				if (isFirstNbFailedOccurences) {
 					nbFailedOccurences = StringUtils.substring(line, StringUtils.indexOf(line, ":")+1).trim();
-					System.out.println("nbFailedOccurences " + nbFailedOccurences);
 					isFirstNbFailedOccurences = false;
 				}
 			} else if (StringUtils.startsWith(line, "Nb Pre-qualified")) {
 				ps.println(line);
 				if (isFirstNbNmi) {
 					nbNmi = StringUtils.substring(line, StringUtils.indexOf(line, ":")+1).trim();
-					System.out.println("nbNmi " + nbNmi);
 					isFirstNbNmi= false;
 				}
 			} else if (StringUtils.startsWith(line, "Nb Not Applicable")) {
 				ps.println(line);
 				if (isFirstNbNa) {
 					nbNa = StringUtils.substring(line, StringUtils.indexOf(line, ":")+1).trim();
-					System.out.println("nbNa " + nbNa);
 					isFirstNbNa = false;
 				}
 			} else if (StringUtils.startsWith(line, "Nb Not Tested")) {
 				ps.println(line);
 				if (isFirstNbNt) {
 					nbNt = StringUtils.substring(line, StringUtils.indexOf(line, ":")+1).trim();
-					System.out.println("nbNt " + nbNt);
 					isFirstNbNt = false;
 				}
 			} else if (StringUtils.startsWith(line, "Audit Id")) {
 				ps.println(line);
 				auditId = StringUtils.substring(line, StringUtils.indexOf(line, ":")+1).trim();
-				System.out.println("auditId " + auditId);
 			}
 		}
 		ps.println("");
-		System.out.println("EEEEEENNNNNNNNNNNDDDDDDDD");
 	}
-
-	public String uploadFileToSftpServer(String user, String password, String host, String remotePath, String fileName) {
-		int port = 22;
-		String rez = "+!";
-		File f = null;
-		FileInputStream fis = null;
-
-		try {
-			JSch jsch = new JSch();
-			Session session = jsch.getSession(user, host, port);
-			session.setPassword(password);
-			session.setConfig("StrictHostKeyChecking", "no");
-
-			session.connect();
-
-			Channel channel = session.openChannel("sftp");
-			channel.connect();
-			ChannelSftp channelSftp = (ChannelSftp) channel;
-			channelSftp.cd(remotePath);
-			f = new File(fileName);
-			fis = new FileInputStream(f);
-			channelSftp.put(fis, f.getName());
-
-			channel.disconnect();
-			session.disconnect();
-		}
-
-		catch (Exception e) {
-			rez = e.toString();
-		}finally{
-			if(fis!=null){
-				try {
-					fis.close();
-				} catch (IOException e) {
-					e.printStackTrace();
-				}
-			}
-		}
-		return rez;
-	}
-
-	public String execNixComAndGetRez(String user, String password, String host, String command, PrintStream ps) {
-		int port = 22;
-		String rez = "+!";
-
-		try {
-			JSch jsch = new JSch();
-			Session session = jsch.getSession(user, host, port);
-			session.setPassword(password);
-			session.setConfig("StrictHostKeyChecking", "no");
-
-			session.connect();
-
-			Channel channel = session.openChannel("exec");
-			((ChannelExec) channel).setCommand(command); //setting command
-
-			channel.setInputStream(null);
-
-			((ChannelExec) channel).setErrStream(System.err);
-
-			InputStream in = channel.getInputStream();
-
-			channel.connect();
-
-			byte[] tmp = new byte[1024];
-			while (true) {
-				while (in.available() > 0) {
-					int i = in.read(tmp, 0, 1024);
-					if (i < 0)
-						break;
-					rez = new String(tmp, 0, i);
-					ps.println(rez);
-				}
-				if (channel.isClosed()) {
-					break;
-				}
-				try {
-					Thread.sleep(1000);
-				} catch (Exception e) {
-					rez = e.toString();
-				}
-			}
-			channel.disconnect();
-			session.disconnect();
-		}
-
-		catch (Exception e) {
-			rez = e.toString();
-		}
-		return rez;
-	}
-
-	static String stripLeadingAndTrailingQuotes(String str){
-		if (str.startsWith("\"")){
-			str = str.substring(1, str.length());
-		}
-
-		if (str.endsWith("\"")){
-			str = str.substring(0, str.length() - 1);
-		}
-
-		return str;
-	}
-
 
 	public String outputTanaguruResults() {
 		return toString();

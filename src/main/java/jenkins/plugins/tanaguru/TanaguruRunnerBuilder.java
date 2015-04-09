@@ -207,9 +207,7 @@ public class TanaguruRunnerBuilder extends Builder {
 					build.getProject().getDisplayName());
 		}
 		
-		System.out.println("DO WE REALLY GET HERE");
 		writeResultToWorkspace(tanaguruRunner, build.getWorkspace());
-		System.out.println("OR HERE");
 		setBuildStatus(build, tanaguruRunner);
 
 		return true;
@@ -278,22 +276,13 @@ public class TanaguruRunnerBuilder extends Builder {
 			FilePath workspace) throws IOException, InterruptedException {
 		
 		File workspacedir = new File(workspace.toURI());
-		System.out.println(workspacedir.getPath());
-		System.out.println("WHAT ABOUT HERE");
 		writeValueToFile(tanaguruRunner.mark, "mark", workspacedir);
-		System.out.println("Wrting mark value : " + tanaguruRunner.mark);
 		writeValueToFile(tanaguruRunner.nbPassed, "passed", workspacedir);
-		System.out.println("Wrting mark value : " + tanaguruRunner.nbPassed);
 		writeValueToFile(tanaguruRunner.nbFailed, "failed", workspacedir);
-		System.out.println("Wrting mark value : " + tanaguruRunner.nbFailed);
 		writeValueToFile(tanaguruRunner.nbFailedOccurences, "failedOccurences", workspacedir);
-		System.out.println("Wrting mark value : " + tanaguruRunner.nbFailedOccurences);
 		writeValueToFile(tanaguruRunner.nbNmi, "nmi", workspacedir);
-		System.out.println("Wrting mark value : " + tanaguruRunner.nbNmi);
 		writeValueToFile(tanaguruRunner.nbNa, "na", workspacedir);
-		System.out.println("Wrting mark value : " + tanaguruRunner.nbNa);
 		writeValueToFile(tanaguruRunner.nbNt, "nt", workspacedir);
-		System.out.println("Wrting mark value : " + tanaguruRunner.nbNt);
 	}
 
 	/**
