@@ -46,11 +46,6 @@ public class TanaguruInstallation {
     private final String databaseLogin;
     private String databasePassword;
    
-    private final Boolean dynamic;
-    private final String cliHostName;
-    private final String cliUserName;
-    private String cliPassword;
-
     private final String tanaguruLogin;
 
     @DataBoundConstructor
@@ -61,11 +56,7 @@ public class TanaguruInstallation {
             String databaseName,
             String databaseLogin,
             String databasePassword,
-            String tanaguruLogin,
-            Boolean dynamic,
-            String cliHostName,
-            String cliUserName,
-            String cliPassword) {
+            String tanaguruLogin) {
         this.webappUrl = webappUrl;
         this.databaseHost = databaseHost;
         this.databasePort = databasePort;
@@ -73,10 +64,6 @@ public class TanaguruInstallation {
         this.databaseLogin = databaseLogin;
         setDatabasePassword(databasePassword);
         this.tanaguruLogin = tanaguruLogin;
-        this.dynamic = dynamic;
-        this.cliHostName = cliHostName;
-        this.cliUserName = cliUserName;
-        this.cliPassword = cliPassword;
     }
 
     public String getWebappUrl() {
@@ -103,18 +90,6 @@ public class TanaguruInstallation {
         return tanaguruLogin;
     }
     
-	public Boolean isDynamic() {
-		return dynamic;
-	}
-
-	public String getCliHostName() {
-		return cliHostName;
-	}
-
-	public String getCliUserName() {
-		return cliUserName;
-	}
-
 	public String getDatabasePassword() {
         return Scrambler.descramble(databasePassword);
     }
@@ -123,13 +98,5 @@ public class TanaguruInstallation {
         this.databasePassword = Scrambler.scramble(Util.fixEmptyAndTrim(password));
     }
     
-    public String getCliPassword() {
-    	return Scrambler.descramble(cliPassword);
-	}
-
-	public void setCliPassword(String cliPassword) {
-		this.cliPassword = Scrambler.scramble(Util.fixEmptyAndTrim(cliPassword));;
-	}
-
 
 }
