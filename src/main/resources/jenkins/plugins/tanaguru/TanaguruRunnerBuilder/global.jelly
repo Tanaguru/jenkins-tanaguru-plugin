@@ -53,5 +53,20 @@
     <f:entry title="${%isDebug}" description="${%isDebugDescr}" field="isDebug">
       <f:checkbox/>
     </f:entry>
+
+    <f:optionalBlock name="dynamic" title="${%cliTanaguruRemote}" inline="true" field="dynamic" checked="${instance.dynamic}">
+      	<f:entry title="${%cliHostName}" description="${%cliHostNameDescr}" field="cliHostName">
+  			<f:textbox />
+		</f:entry>
+	    <f:entry title="${%cliUserName}" field="cliUserName">
+  			<f:textbox />
+		</f:entry>
+		<f:entry title="${%cliPassword}" field="cliPassword">
+  			<f:password />
+		</f:entry>
+		<f:validateButton title="${%cliTestConnection}" progress="${%Testing...}"
+				method="cliTestConnection" with="cliHostName,cliUserName,cliPassword" />
+    </f:optionalBlock>
+
   </f:section>
 </j:jelly>

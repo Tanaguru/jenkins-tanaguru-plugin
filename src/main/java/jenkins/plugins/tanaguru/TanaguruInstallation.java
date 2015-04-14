@@ -73,11 +73,11 @@ public class TanaguruInstallation {
     public String getDatabaseHost() {
         return databaseHost;
     }
-    
+
     public String getDatabaseName() {
         return databaseName;
     }
-    
+
     public String getDatabasePort() {
         return databasePort;
     }
@@ -85,11 +85,11 @@ public class TanaguruInstallation {
     public String getDatabaseLogin() {
         return databaseLogin;
     }
-    
+
     public String getTanaguruLogin() {
         return tanaguruLogin;
     }
-    
+
     public String getDatabasePassword() {
         return Scrambler.descramble(databasePassword);
     }
@@ -97,5 +97,6 @@ public class TanaguruInstallation {
     public final void setDatabasePassword(String password) {
         this.databasePassword = Scrambler.scramble(Util.fixEmptyAndTrim(password));
     }
+
 
 }
