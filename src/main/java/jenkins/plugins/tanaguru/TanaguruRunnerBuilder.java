@@ -21,32 +21,39 @@
  */
 package jenkins.plugins.tanaguru;
 
-import com.sebuilder.interpreter.IO;
-import com.sebuilder.interpreter.factory.ScriptFactory;
-import hudson.Launcher;
 import hudson.Extension;
 import hudson.FilePath;
-import hudson.util.FormValidation;
-import hudson.model.AbstractBuild;
-import hudson.model.BuildListener;
-import hudson.model.AbstractProject;
+import hudson.Launcher;
 import hudson.model.Action;
+import hudson.model.BuildListener;
 import hudson.model.Result;
-import hudson.tasks.Builder;
+import hudson.model.AbstractBuild;
+import hudson.model.AbstractProject;
 import hudson.tasks.BuildStepDescriptor;
+import hudson.tasks.Builder;
+import hudson.util.FormValidation;
 import hudson.util.ListBoxModel;
 import hudson.util.ListBoxModel.Option;
+
 import java.io.File;
-import net.sf.json.JSONObject;
-import org.kohsuke.stapler.DataBoundConstructor;
-import org.kohsuke.stapler.StaplerRequest;
-import org.kohsuke.stapler.QueryParameter;
+import java.io.IOException;
 
 import javax.servlet.ServletException;
-import java.io.IOException;
+
+import net.sf.json.JSONObject;
+
 import org.apache.commons.io.FileUtils;
 import org.apache.commons.io.IOUtils;
 import org.apache.commons.lang.StringUtils;
+import org.kohsuke.stapler.DataBoundConstructor;
+import org.kohsuke.stapler.QueryParameter;
+import org.kohsuke.stapler.StaplerRequest;
+
+import com.jcraft.jsch.JSch;
+import com.jcraft.jsch.JSchException;
+import com.jcraft.jsch.Session;
+import com.sebuilder.interpreter.IO;
+import com.sebuilder.interpreter.factory.ScriptFactory;
 
 /**
  * <p>
@@ -67,15 +74,13 @@ public class TanaguruRunnerBuilder extends Builder {
 
     private static final String PLOT_PLUGIN_YVALUE = "YVALUE=";
     private static final String TG_SCRIPT_NAME = "bin/tanaguru.sh";
-    private static final String SQL_PROCEDURE_NAME = 
-            "/sql/create_contract_with_scenario_and_create_act.sql";
-    private static final String SQL_PROCEDURE_SCRIPT_NAME = 
-            "create-contract-with-scenario-and-create-act.sql";
+    private static final String SQL_PROCEDURE_NAME = "/sql/create_contract_with_scenario_and_create_act.sql";
+    private static final String SQL_PROCEDURE_SCRIPT_NAME = "create-contract-with-scenario-and-create-act.sql";
     private static final String INSERT_ACT_NAME = "/sql/insert_act.sh";
     private static final String INSERT_ACT_SCRIPT_NAME = "insert-act.sh";
     private static final String TMP_FOLDER_NAME = "tmp/";
     private static final String DEFAULT_XMX_VALUE = "256";
-    
+
     private final String scenario;
     private final String scenarioName;
     private final String refAndLevel;
@@ -117,7 +122,7 @@ public class TanaguruRunnerBuilder extends Builder {
     public String getRefAndLevel() {
         return refAndLevel;
     }
-    
+
     /**
      * We'll use this from the <tt>config.jelly</tt>.
      *
@@ -126,7 +131,7 @@ public class TanaguruRunnerBuilder extends Builder {
     public String getScenarioName() {
         return scenarioName;
     }
-    
+
     /**
      * We'll use this from the <tt>config.jelly</tt>.
      *
@@ -135,7 +140,7 @@ public class TanaguruRunnerBuilder extends Builder {
     public String getMaxFailedOccurencesForStable() {
         return String.valueOf(maxFailedOccurencesForStable);
     }
-    
+
     /**
      * We'll use this from the <tt>config.jelly</tt>.
      *
@@ -144,7 +149,7 @@ public class TanaguruRunnerBuilder extends Builder {
     public String getMinMarkThresholdForStable() {
         return String.valueOf(minMarkThresholdForStable);
     }
-    
+
     /**
      * We'll use this from the <tt>config.jelly</tt>.
      *
@@ -156,21 +161,24 @@ public class TanaguruRunnerBuilder extends Builder {
 
     @Override
     public boolean perform(AbstractBuild build, Launcher launcher, BuildListener listener) throws IOException, InterruptedException {
-      
-        // This is where you 'build' the project.
+        Boolean dynamic = getDescriptor().getDynamic();
         File contextDir = new File(getDescriptor().getTanaguruCliPath());
-        if (!contextDir.exists()) {
-            listener.getLogger().println("Le chemin vers le contexte d'exécution est incorrect");
-            return false;
+
+        if(!dynamic){
+            // This is where you 'build' the project.
+            if (!contextDir.exists()) {
+                listener.getLogger().println("Le chemin vers le contexte d'exécution est incorrect");
+                return false;
+            }
+            File scriptFile = new File(getDescriptor().getTanaguruCliPath() + "/" + TG_SCRIPT_NAME);
+            if (!scriptFile.canExecute()) {
+                listener.getLogger().println("Le script n'est pas exécutable");
+                return false;
+            }
         }
-        File scriptFile = new File(getDescriptor().getTanaguruCliPath() + "/" + TG_SCRIPT_NAME);
-        if (!scriptFile.canExecute()) {
-            listener.getLogger().println("Le script n'est pas exécutable");
-            return false;
-        }
-        
-        String spaceEscapedScenarioName=scenarioName.replace(' ','_');
-        
+
+        String spaceEscapedScenarioName = scenarioName.replace(' ','_');
+
         TanaguruRunner tanaguruRunner=
                 new TanaguruRunner(
                         TG_SCRIPT_NAME,
@@ -180,28 +188,31 @@ public class TanaguruRunnerBuilder extends Builder {
                         refAndLevel.split(";")[0],
                         refAndLevel.split(";")[1],
                         contextDir,
-                        getDescriptor().getFirefoxPath(), 
-                        getDescriptor().getDisplayPort(),
                         StringUtils.isBlank(xmxValue)? DEFAULT_XMX_VALUE : xmxValue,
-                        listener,
-                        getDescriptor().getIsDebug());
+                                listener,
+                                getDescriptor(),
+                                build.getProject().getDisplayName());
+
+        tanaguruRunner.setWorkspace(build.getWorkspace());
+        tanaguruRunner.setContext(getDescriptor().getTanaguruCliPath());
 
         tanaguruRunner.callTanaguruService();
-        
+
+        if(!dynamic){
+            linkToTanaguruWebapp(
+                    tanaguruRunner, 
+                    spaceEscapedScenarioName, 
+                    scenario, 
+                    contextDir, 
+                    build.getProject().getDisplayName());
+        }
+
         writeResultToWorkspace(tanaguruRunner, build.getWorkspace());
-        
-        linkToTanaguruWebapp(
-                tanaguruRunner, 
-                spaceEscapedScenarioName, 
-                scenario, 
-                contextDir, 
-                build.getProject().getDisplayName());
-        
         setBuildStatus(build, tanaguruRunner);
-        
+
         return true;
     }
-    
+
     /**
      * 
      * @param tanaguruRunner
@@ -214,27 +225,27 @@ public class TanaguruRunnerBuilder extends Builder {
             String scenario,
             File contextDir,
             String projectName) throws IOException, InterruptedException {
-        
+
         File insertProcedureFile = 
                 TanaguruRunnerBuilder.createTempFile(
                         contextDir, 
                         SQL_PROCEDURE_SCRIPT_NAME,
                         IOUtils.toString(getClass().getResourceAsStream(SQL_PROCEDURE_NAME)));
-        
+
         String script = IOUtils.toString(getClass().getResourceAsStream(INSERT_ACT_NAME))
-            .replace("$host", TanaguruInstallation.get().getDatabaseHost())
-            .replace("$user", TanaguruInstallation.get().getDatabaseLogin())
-            .replace("$port", TanaguruInstallation.get().getDatabasePort())
-            .replace("$passwd", TanaguruInstallation.get().getDatabasePassword())
-            .replace("$db", TanaguruInstallation.get().getDatabaseName())
-            .replace("$procedureFileName", TMP_FOLDER_NAME+SQL_PROCEDURE_SCRIPT_NAME);
+                .replace("$host", TanaguruInstallation.get().getDatabaseHost())
+                .replace("$user", TanaguruInstallation.get().getDatabaseLogin())
+                .replace("$port", TanaguruInstallation.get().getDatabasePort())
+                .replace("$passwd", TanaguruInstallation.get().getDatabasePassword())
+                .replace("$db", TanaguruInstallation.get().getDatabaseName())
+                .replace("$procedureFileName", TMP_FOLDER_NAME+SQL_PROCEDURE_SCRIPT_NAME);
 
         File insertActFile = 
                 TanaguruRunnerBuilder.createTempFile(
                         contextDir, 
                         INSERT_ACT_SCRIPT_NAME,
                         script);
-        
+
         ProcessBuilder pb = new ProcessBuilder(
                 TMP_FOLDER_NAME+INSERT_ACT_SCRIPT_NAME,
                 TanaguruInstallation.get().getTanaguruLogin(),
@@ -252,7 +263,7 @@ public class TanaguruRunnerBuilder extends Builder {
         FileUtils.deleteQuietly(insertActFile);
         FileUtils.deleteQuietly(insertProcedureFile);
     }
-    
+
     /**
      * Export atomic results from Tanaguru Analysis to enable graphic creation
      * through plot plugin.
@@ -263,9 +274,8 @@ public class TanaguruRunnerBuilder extends Builder {
     private void writeResultToWorkspace(
             TanaguruRunner tanaguruRunner, 
             FilePath workspace) throws IOException, InterruptedException {
-        
+
         File workspacedir = new File(workspace.toURI());
-        
         writeValueToFile(tanaguruRunner.mark, "mark", workspacedir);
         writeValueToFile(tanaguruRunner.nbPassed, "passed", workspacedir);
         writeValueToFile(tanaguruRunner.nbFailed, "failed", workspacedir);
@@ -274,7 +284,7 @@ public class TanaguruRunnerBuilder extends Builder {
         writeValueToFile(tanaguruRunner.nbNa, "na", workspacedir);
         writeValueToFile(tanaguruRunner.nbNt, "nt", workspacedir);
     }
-    
+
     /**
      * 
      * @param value
@@ -286,10 +296,11 @@ public class TanaguruRunnerBuilder extends Builder {
      */
     private void writeValueToFile(String value, String valueType, File workspacedir) 
             throws IOException, InterruptedException{
-        File ntFile = new File (workspacedir.getAbsolutePath()+"/tanaguru-"+valueType+".properties");
-        FileUtils.write(ntFile, PLOT_PLUGIN_YVALUE+value);
+        File ntFile = new File (workspacedir.getAbsolutePath()+ "/tanaguru-" + valueType + ".properties");
+        FileUtils.writeStringToFile(ntFile, PLOT_PLUGIN_YVALUE+value);
+        System.out.println("File CREATED");
     }
-    
+
     private void setBuildStatus(AbstractBuild build, TanaguruRunner tanaguruRunner) {
         if ((StringUtils.isBlank(minMarkThresholdForStable) || Integer.valueOf(minMarkThresholdForStable)<0) &&
                 (StringUtils.isBlank(maxFailedOccurencesForStable) || Integer.valueOf(maxFailedOccurencesForStable)<0)) {
@@ -308,7 +319,7 @@ public class TanaguruRunnerBuilder extends Builder {
         }
         build.setResult(Result.SUCCESS);
     }
-    
+
     /**
      * Create a temporary file within a temporary folder, created in the
      * contextDir if not exists (first time)
@@ -334,7 +345,7 @@ public class TanaguruRunnerBuilder extends Builder {
         }
         return tempFile;
     }
-    
+
     /**
      * Change on-the-fly version of se-builder scenario from '2' to '1' to
      * ensure its compatibility 
@@ -343,9 +354,9 @@ public class TanaguruRunnerBuilder extends Builder {
      */
     public static String forceVersion1ToScenario(String scenario)  {
         return scenario.replace("\"formatVersion\": 2", "\"formatVersion\":1")
-                    .replace("\"formatVersion\":2", "\"formatVersion\":1");
+                .replace("\"formatVersion\":2", "\"formatVersion\":1");
     }
-    
+
     @Override
     public DescriptorImpl getDescriptor() {
         return (DescriptorImpl) super.getDescriptor();
@@ -366,9 +377,13 @@ public class TanaguruRunnerBuilder extends Builder {
         private String pathToCli = "";
         private String displayPort = "";
         private String firefoxPath = "";
+        private Boolean dynamic = false;
+        private String cliHostName = "";
+        private String cliUserName = "";
+        private String cliPassword = "";
         private boolean isDebug = false;
         private TanaguruInstallation tanaguruInstallation;
-        
+
         /**
          * In order to load the persisted global configuration, you have to call
          * load() in the constructor.
@@ -395,9 +410,9 @@ public class TanaguruRunnerBuilder extends Builder {
             if (value.length() == 0) {
                 return FormValidation.error("Please fill-in a not empty scenario");
             }
-            
+
             try {
-              IO.read(TanaguruRunnerBuilder.forceVersion1ToScenario(value));
+                IO.read(TanaguruRunnerBuilder.forceVersion1ToScenario(value));
             } catch (IOException ex) {
                 return FormValidation.error("Please fill-in a valid scenario");
             } catch (ScriptFactory.SuiteException ex) {
@@ -407,7 +422,7 @@ public class TanaguruRunnerBuilder extends Builder {
             }
             return FormValidation.ok();
         }
-        
+
         /**
          * Performs on-the-fly validation of the form field 'scenarioName'.
          *
@@ -429,7 +444,7 @@ public class TanaguruRunnerBuilder extends Builder {
             }
             return FormValidation.ok();
         }
-        
+
         /**
          * Performs on-the-fly validation of the form field 'xmx Value'.
          *
@@ -444,23 +459,23 @@ public class TanaguruRunnerBuilder extends Builder {
          * @throws javax.servlet.ServletException
          * @throws IOException 
          */
-        public FormValidation doCheckXmxValue (@QueryParameter String value)
+        public FormValidation doCheckXmxValue(@QueryParameter String value)
                 throws IOException, ServletException {
-            
+
             if (value.length() == 0) {
                 return FormValidation.ok();
             }
             try {
                 int xmxValue = Float.valueOf(value).intValue();
                 if (xmxValue <= 64) {
-                  return FormValidation.error("Please fill-in a Xmx value superior to default Xms value (64)");
+                    return FormValidation.error("Please fill-in a Xmx value superior to default Xms value (64)");
                 }
             } catch (NumberFormatException nfe) {
                 return FormValidation.error("Please fill-in a valid Xmx value");
             }
             return FormValidation.ok();
         }
-        
+
         /**
          * Performs on-the-fly validation of the form field 'Min Mark Threshold 
          * For Stable'.
@@ -478,21 +493,21 @@ public class TanaguruRunnerBuilder extends Builder {
          */
         public FormValidation doCheckMinMarkThresholdForStable (@QueryParameter String value)
                 throws IOException, ServletException {
-            
+
             if (value.length() == 0) {
                 return FormValidation.ok();
             }
             try {
                 int mark = Float.valueOf(value).intValue();
                 if (mark > 100) {
-                  return FormValidation.error("Please fill-in a valid minimal mark threshold");
+                    return FormValidation.error("Please fill-in a valid minimal mark threshold");
                 }
             } catch (NumberFormatException nfe) {
                 return FormValidation.error("Please fill-in a valid minimal mark threshold");
             }
             return FormValidation.ok();
         }
-        
+
         /**
          * Performs on-the-fly validation of the form field 'Max Failed 
          * Occurences For Stable'.
@@ -510,14 +525,14 @@ public class TanaguruRunnerBuilder extends Builder {
          */
         public FormValidation doCheckMaxFailedOccurencesForStable (@QueryParameter String value)
                 throws IOException, ServletException {
-            
+
             if (value.length() == 0) {
                 return FormValidation.ok();
             }
             try {
                 int mark = Integer.valueOf(value);
                 if (mark > 65535) {
-                  return FormValidation.error("Please fill-in a valid maximal number of failed occurences threshold");
+                    return FormValidation.error("Please fill-in a valid maximal number of failed occurences threshold");
                 }
             } catch (NumberFormatException nfe) {
                 return FormValidation.error("Please fill-in a valid maximal number of failed occurences threshold");
@@ -525,6 +540,51 @@ public class TanaguruRunnerBuilder extends Builder {
             return FormValidation.ok();
         }
 
+        /**
+         * Test connection to the remote server 
+         * 
+         *
+         * @param value This parameter receives the value that the user has
+         * typed.
+         * @return Indicates the outcome of the validation. This is sent to the
+         * browser.
+         * <p>
+         * Note that returning {@link FormValidation#error(String)} does not
+         * prevent the form from being saved. It just means that a message will
+         * be displayed to the user.
+         * @throws javax.servlet.ServletException
+         * @throws IOException
+         */
+        public FormValidation doCliTestConnection(@QueryParameter Boolean dynamic, @QueryParameter String cliHostName, 
+                @QueryParameter String cliUserName, 
+                @QueryParameter String cliPassword)
+                        throws IOException, ServletException {
+
+            System.out.println("dynamic : " + dynamic);
+            if(cliHostName.length() == 0 || cliUserName.length() == 0 || cliPassword.length() == 0){
+                return FormValidation.error("Please check that the fields aren't empty!");
+            }
+
+            java.util.Properties config = new java.util.Properties();
+            config.put("StrictHostKeyChecking", "no");
+            JSch jsch = new JSch();
+            Session session;
+            try {
+                session = jsch.getSession(cliUserName, cliHostName, 22);
+                session.setPassword(cliPassword);
+                session.setConfig(config);
+                session.connect();
+                if(session.isConnected()){
+                    return FormValidation.ok("Success");
+                }
+                session.disconnect();
+            } catch (JSchException e) {
+                e.printStackTrace();
+                return FormValidation.error("Error occured while authenticating to the server!");
+            }
+
+            return FormValidation.error("Error occured while authenticating to the server!");
+        }
 
         /**
          * Fill-in values of the form field 'referential and level'.
@@ -544,7 +604,7 @@ public class TanaguruRunnerBuilder extends Builder {
                     new Option("Rgaa3 : A", "Rgaa30;Bz"),
                     new Option("Rgaa3 : AA", "Rgaa30;Ar"),
                     new Option("Rgaa3 : AAA", "Rgaa30;Or")
-            );
+                    );
         }
 
         @Override
@@ -567,16 +627,22 @@ public class TanaguruRunnerBuilder extends Builder {
             pathToCli = formData.getString("tanaguruCliPath");
             displayPort = formData.getString("displayPort");
             firefoxPath = formData.getString("firefoxPath");
+            dynamic = formData.getBoolean("dynamic");
+            cliHostName = formData.getString("cliHostName");
+            cliUserName = formData.getString("cliUserName");
+            cliPassword = formData.getString("cliPassword");
+
+
             tanaguruInstallation = 
                     new TanaguruInstallation(
-                        formData.getString("webappUrl"), 
-                        formData.getString("databaseHost"),
-                        formData.getString("databasePort"),
-                        formData.getString("databaseName"),
-                        formData.getString("databaseLogin"),
-                        formData.getString("databasePassword"),
-                        formData.getString("tanaguruLogin")
-                    );
+                            formData.getString("webappUrl"), 
+                            formData.getString("databaseHost"),
+                            formData.getString("databasePort"),
+                            formData.getString("databaseName"),
+                            formData.getString("databaseLogin"),
+                            formData.getString("databasePassword"),
+                            formData.getString("tanaguruLogin")
+                            );
             isDebug = formData.getBoolean("isDebug");
 
             save();
@@ -603,12 +669,40 @@ public class TanaguruRunnerBuilder extends Builder {
         public String getFirefoxPath() {
             return firefoxPath;
         }
-        
+
         /**
          * @return whether the debug mode is activated
          */
         public boolean getIsDebug() {
             return isDebug;
+        }
+
+        /**
+         * @return wether the remote CLI mode is activated
+         */
+        public Boolean getDynamic() {
+            return dynamic;
+        }
+
+        /**
+         * @return the remote Host name
+         */
+        public String getCliHostName() {
+            return cliHostName;
+        }
+
+        /**
+         * @return the remote host user name
+         */
+        public String getCliUserName() {
+            return cliUserName;
+        }
+
+        /**
+         * @return the remote host password
+         */
+        public String getCliPassword() {
+            return cliPassword;
         }
 
         /**
