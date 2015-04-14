@@ -37,49 +37,49 @@ import org.apache.commons.lang.StringUtils;
  */
 public class ProjectTanaguruAction implements ProminentProjectAction {
 
-	private final AbstractProject<?, ?> project;
-	private static final String URL_PREFIX_RESULT = 
-			"home/contract/audit-synthesis.html?audit=";
+    private final AbstractProject<?, ?> project;
+    private static final String URL_PREFIX_RESULT = 
+            "home/contract/audit-synthesis.html?audit=";
 
-	public ProjectTanaguruAction(AbstractProject<?, ?> project) {
-		this.project = project;
-	}
+    public ProjectTanaguruAction(AbstractProject<?, ?> project) {
+        this.project = project;
+    }
 
-	//    @Override
-	public String getIconFileName() {
-		PluginWrapper wrapper = Jenkins.getInstance().getPluginManager()
-				.getPlugin(TanaguruPlugin.class);
-		return "/plugin/" + wrapper.getShortName() + "/images/Logo-Tanaguru.png";
-	}
+    //    @Override
+    public String getIconFileName() {
+        PluginWrapper wrapper = Jenkins.getInstance().getPluginManager()
+                .getPlugin(TanaguruPlugin.class);
+        return "/plugin/" + wrapper.getShortName() + "/images/Logo-Tanaguru.png";
+    }
 
-	//    @Override
-	public String getDisplayName() {
-		return "Tanaguru";
-	}
+    //    @Override
+    public String getDisplayName() {
+        return "Tanaguru";
+    }
 
-	//    @Override
-	public String getUrlName() {
-		String webappUrl = Jenkins.getInstance().getDescriptorByType(TanaguruRunnerBuilder.DescriptorImpl.class).getInstallation().getWebappUrl();
-		if (project.getLastBuild() != null) {
-			try {
-				for (String line : FileUtils.readLines(project.getLastBuild().getLogFile())) {
-					if (StringUtils.startsWith(line, "Audit Id")) {
-						return buildAuditResultUrl(line, webappUrl);
-					}
-				}
-			}  catch (IOException ex) {
-				Logger.getLogger(ProjectTanaguruAction.class.getName()).log(Level.SEVERE, null, ex);
-			}
-		}
-		return webappUrl;
-	}
+    //    @Override
+    public String getUrlName() {
+        String webappUrl = Jenkins.getInstance().getDescriptorByType(TanaguruRunnerBuilder.DescriptorImpl.class).getInstallation().getWebappUrl();
+        if (project.getLastBuild() != null) {
+            try {
+                for (String line : FileUtils.readLines(project.getLastBuild().getLogFile())) {
+                    if (StringUtils.startsWith(line, "Audit Id")) {
+                        return buildAuditResultUrl(line, webappUrl);
+                    }
+                }
+            }  catch (IOException ex) {
+                Logger.getLogger(ProjectTanaguruAction.class.getName()).log(Level.SEVERE, null, ex);
+            }
+        }
+        return webappUrl;
+    }
 
-	private String buildAuditResultUrl(String line, String webappUrl) {
-		String auditId = StringUtils.substring(line, StringUtils.indexOf(line, ":")+1).trim();
-		if (StringUtils.endsWith(webappUrl, "/")) {
-			return webappUrl+URL_PREFIX_RESULT+auditId;
-		} else {
-			return webappUrl+"/"+URL_PREFIX_RESULT+auditId;
-		}
-	}
+    private String buildAuditResultUrl(String line, String webappUrl) {
+        String auditId = StringUtils.substring(line, StringUtils.indexOf(line, ":")+1).trim();
+        if (StringUtils.endsWith(webappUrl, "/")) {
+            return webappUrl+URL_PREFIX_RESULT+auditId;
+        } else {
+            return webappUrl+"/"+URL_PREFIX_RESULT+auditId;
+        }
+    }
 }

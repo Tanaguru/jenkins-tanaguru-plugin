@@ -32,71 +32,71 @@ import org.kohsuke.stapler.DataBoundConstructor;
  */
 public class TanaguruInstallation {
 
-	public static final TanaguruInstallation get() {
-		TanaguruRunnerBuilder.DescriptorImpl tanaguruDescriptor = 
-				Jenkins.getInstance().getDescriptorByType(TanaguruRunnerBuilder.DescriptorImpl.class);
-		return tanaguruDescriptor.getInstallation();
-	}
+    public static final TanaguruInstallation get() {
+        TanaguruRunnerBuilder.DescriptorImpl tanaguruDescriptor = 
+                Jenkins.getInstance().getDescriptorByType(TanaguruRunnerBuilder.DescriptorImpl.class);
+        return tanaguruDescriptor.getInstallation();
+    }
 
-	private final String webappUrl;
+    private final String webappUrl;
 
-	private final String databaseHost;
-	private final String databasePort;
-	private final String databaseName;
-	private final String databaseLogin;
-	private String databasePassword;
+    private final String databaseHost;
+    private final String databasePort;
+    private final String databaseName;
+    private final String databaseLogin;
+    private String databasePassword;
 
-	private final String tanaguruLogin;
+    private final String tanaguruLogin;
 
-	@DataBoundConstructor
-	public TanaguruInstallation(
-			String webappUrl,
-			String databaseHost,
-			String databasePort,
-			String databaseName,
-			String databaseLogin,
-			String databasePassword,
-			String tanaguruLogin) {
-		this.webappUrl = webappUrl;
-		this.databaseHost = databaseHost;
-		this.databasePort = databasePort;
-		this.databaseName = databaseName;
-		this.databaseLogin = databaseLogin;
-		setDatabasePassword(databasePassword);
-		this.tanaguruLogin = tanaguruLogin;
-	}
+    @DataBoundConstructor
+    public TanaguruInstallation(
+            String webappUrl,
+            String databaseHost,
+            String databasePort,
+            String databaseName,
+            String databaseLogin,
+            String databasePassword,
+            String tanaguruLogin) {
+        this.webappUrl = webappUrl;
+        this.databaseHost = databaseHost;
+        this.databasePort = databasePort;
+        this.databaseName = databaseName;
+        this.databaseLogin = databaseLogin;
+        setDatabasePassword(databasePassword);
+        this.tanaguruLogin = tanaguruLogin;
+    }
 
-	public String getWebappUrl() {
-		return webappUrl;
-	}
+    public String getWebappUrl() {
+        return webappUrl;
+    }
 
-	public String getDatabaseHost() {
-		return databaseHost;
-	}
+    public String getDatabaseHost() {
+        return databaseHost;
+    }
 
-	public String getDatabaseName() {
-		return databaseName;
-	}
+    public String getDatabaseName() {
+        return databaseName;
+    }
 
-	public String getDatabasePort() {
-		return databasePort;
-	}
+    public String getDatabasePort() {
+        return databasePort;
+    }
 
-	public String getDatabaseLogin() {
-		return databaseLogin;
-	}
+    public String getDatabaseLogin() {
+        return databaseLogin;
+    }
 
-	public String getTanaguruLogin() {
-		return tanaguruLogin;
-	}
+    public String getTanaguruLogin() {
+        return tanaguruLogin;
+    }
 
-	public String getDatabasePassword() {
-		return Scrambler.descramble(databasePassword);
-	}
+    public String getDatabasePassword() {
+        return Scrambler.descramble(databasePassword);
+    }
 
-	public final void setDatabasePassword(String password) {
-		this.databasePassword = Scrambler.scramble(Util.fixEmptyAndTrim(password));
-	}
+    public final void setDatabasePassword(String password) {
+        this.databasePassword = Scrambler.scramble(Util.fixEmptyAndTrim(password));
+    }
 
 
 }
