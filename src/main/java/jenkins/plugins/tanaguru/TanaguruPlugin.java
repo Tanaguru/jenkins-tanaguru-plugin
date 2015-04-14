@@ -25,10 +25,10 @@ import hudson.Plugin;
 
 public class TanaguruPlugin extends Plugin {
 
-    /**
-     * Default constructor
-     */
-    public TanaguruPlugin() {
-        super();
-    }
+	/**
+	 * Default constructor
+	 */
+	public TanaguruPlugin() {
+		super();
+	}
 }

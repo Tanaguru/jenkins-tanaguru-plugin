@@ -163,7 +163,7 @@ public class TanaguruRunnerBuilder extends Builder {
 	public boolean perform(AbstractBuild build, Launcher launcher, BuildListener listener) throws IOException, InterruptedException {
 		Boolean dynamic = getDescriptor().getDynamic();
 		File contextDir = new File(getDescriptor().getTanaguruCliPath());
-		
+
 		if(!dynamic){
 			// This is where you 'build' the project.
 			if (!contextDir.exists()) {
@@ -206,7 +206,7 @@ public class TanaguruRunnerBuilder extends Builder {
 					contextDir, 
 					build.getProject().getDisplayName());
 		}
-		
+
 		writeResultToWorkspace(tanaguruRunner, build.getWorkspace());
 		setBuildStatus(build, tanaguruRunner);
 
@@ -274,7 +274,7 @@ public class TanaguruRunnerBuilder extends Builder {
 	private void writeResultToWorkspace(
 			TanaguruRunner tanaguruRunner, 
 			FilePath workspace) throws IOException, InterruptedException {
-		
+
 		File workspacedir = new File(workspace.toURI());
 		writeValueToFile(tanaguruRunner.mark, "mark", workspacedir);
 		writeValueToFile(tanaguruRunner.nbPassed, "passed", workspacedir);
@@ -702,8 +702,8 @@ public class TanaguruRunnerBuilder extends Builder {
 		 * @return the remote host password
 		 */
 		public String getCliPassword() {
-	        return cliPassword;
-	    }
+			return cliPassword;
+		}
 
 		/**
 		 * @return all configured {@link jenkins.plugins.tanaguru.TanaguruInstallation}
