@@ -1,4 +1,4 @@
-# Tanaguru Jekins Plugin
+# Tanaguru Jenkins Plugin
 
 This project is the **Jenkins plugin** of Tanaguru. 
 
